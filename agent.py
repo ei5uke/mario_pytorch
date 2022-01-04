@@ -5,26 +5,26 @@ import torch.nn.functional as F
 import torchvision.transforms as T
 import numpy as np
 from dqn import DQN
+from collections import deque
 
-class Agent(): #doesn't derive from anything in this tutorial but does clearly in mario
-    def __init__(self, state_dim, action_dim): #gamma discount rate, epsilon e-greedy
-        ## CHANGE FROM HERE
-        self.state_dim = state_dim
-        self.action_dim = action_dim
+class Agent():
+    def __init__(self, channels, action_dim, device):
+        self.channels = channels         # the dimension of the state space
+        self.action_dim = action_dim       # the dimension of the action space
+        self.device = device
 
-        self.gamma = 0.99
-        self.epsilon = 1.0
-        self.eps_end = 0.1
-        self.eps_dec = 5e-4
+        self.gamma = 0.99                  # discount rate
+        self.epsilon = 1.0                 # exploration rate
+        self.eps_end = 0.1                 # minimum exploration rate
+        self.eps_dec = 0.99999975          # exploration decay rate
 
-        self.batch_size = 32
-        #self.mem_size = 100000 #idt it's necessary
-        self.curr_mem = 0 #keep track the position of first available memory
-        self.memory = deque(maxlen=100000)
-        ## TO HERE
+        self.batch_size = 32               # batch size 
+        self.curr_mem = 0                  # current memory index
+        self.curr_step = 0                 # agent's current step in the environment
+        self.memory = deque(maxlen=100000) # deque of all the memories
 
-        self.net = DQN(self.state_dim, self.action_dim).float() #originally Q_eval
-        self.optimizer = optim.Adam(self.parameters(), lr=0.00025) # CHANGE LR
+        self.net = DQN(self.channels, self.action_dim).float()
+        self.optimizer = optim.Adam(self.net.parameters(), lr=0.00025) # change lr
         self.loss = nn.SmoothL1Loss() # CHANGE IF I CAN FIND SOMETHING BETTER
 
         # not sure what this does yet
@@ -32,50 +32,81 @@ class Agent(): #doesn't derive from anything in this tutorial but does clearly i
         self.learn_every = 3
         self.sync_every = 1e4
     
-    def store_transition(self, state, action, reward, state_, done): #this stores memory
-        index = self.mem_cntr % self.mem_size 
-        self.state_memory[index] = state
-        self.new_state_memory[index] = state_
-        self.reward_memory[index] = reward
-        self.action_memory[index] = action
-        self.terminal_memory[index] = done
-
-        self.mem_cntr += 1
-
     def act(self, state):
-        if np.random.random() > self.epsilon:
-            state = T.tensor([state]).to(self.net.device) # note to future self, make sure to alt-tab to look at the pytorch dqn tutorial cuz they put these next few steps in the main.py not a method so it's confusing
-            actions = self.Q_eval.forward(state)
-            action = T.argmax(actions).item()
-        else:
+        if np.random.random() > self.epsilon:       # exploit action
+            state = torch.tensor([state]).to(self.net.device) 
+            action_values = self.net(state.unsqueeze(0), model='pi')
+            action = torch.argmax(action_values, axis=1).item()
+        else:                                       # exploration action
             action = np.random.choice(self.action_dim)
 
+        # update exploration rate
+        self.epsilon *= self.eps_dec
+        self.epsilon = max(self.epsilon, self.eps_end)
+
+        self.curr_step += 1
         return action
 
+    def cache(self, state, state_, action, reward, done):
+        # change everything to tensors
+        # state = torch.tensor([state])
+        # state_ = torch.tensor([state_])
+        # action = torch.tensor([action]) # do we really need to wrap with brackets
+        # reward = torch.tensor([reward])
+        # done = torch.tensor([done])
+
+        # add to our memory
+        experience = (state, state_, action, reward, done)
+        if len(self.memory) < 100000:
+            self.memory.append(experience)
+        else:
+            self.memory[self.curr_mem % 100000] = experience
+        self.curr_mem += 1
+
+    def sample(self):
+        return random.sample(self.memory, batch_size)
+
     def learn(self):
-        if self.mem_cntr < self.batch_size:
-            return
-        self.Q_eval.optimizer.zero_grad() #sets gradient of all model parameters to zero
-        #self.Q_eval.optimizer.zero_grad(set_to_none=True) #sets all gradients to None instead of zero, better performance but error-prone
+        if self.curr_step % self.sync_every == 0:
+            self.sync_Q_target()
+        # if self.curr_step % self.save_every == 0:
+        #     self.save()
+        if self.curr_step < self.min_experience:
+            return None, None
+        if self.curr_step % self.learn_every != 0:
+            return None, None
 
-        max_mem = min(self.mem_cntr, self.mem_size) #calculate pos of max memory to only select all memories up to the last filled memory
-        batch = np.random.choice(max_mem, self.batch_size, replace=False) #replace=False bc we don't want to select same memories more than once
-        batch_index = np.arange(self.batch_size, dtype=np.int32)
-        state_batch = T.tensor(self.state_memory[batch]).to(self.Q_eval.device) #convert numpy array to tensor
-        new_state_batch = T.tensor(self.new_state_memory[batch]).to(self.Q_eval.device)
-        reward_batch = T.tensor(self.reward_memory[batch]).to(self.Q_eval.device)
-        terminal_batch = T.tensor(self.terminal_memory[batch]).to(self.Q_eval.device)
-        action_batch = self.action_memory[batch]
+        state, next_state, action, reward, done = self.sample()
 
-        q_eval = self.Q_eval.forward(state_batch)[batch_index, action_batch]
-        q_next = self.Q_eval.forward(new_state_batch)
-        q_next[terminal_batch] = 0.0
-        
-        q_target = reward_batch + self.gamma * T.max(q_next, dim=1)[0] #T.max returns value and index so we only want value so [0]
+        td_est = self.td_estimate(state, action)
+        td_tgt = self.td_target(reward, next_state, done)
 
-        loss = self.Q_eval.loss(q_target, q_eval).to(self.Q_eval.device)
+        loss = self.update_Q_pi(td_est, td_tgt)
+
+        return (td_est.mean().item(), loss)
+
+
+    def td_estimate(self, state, action):
+        current_Q = self.net(state, model='pi')[
+            np.arange(0, self.batch_size), action
+        ]
+        return current_Q
+
+    @torch.no_grad()
+    def td_target(self, reward, next_state, done):
+        next_state_Q = self.net(next_state, model="pi")
+        best_action = torch.argmax(next_state_Q, axis=1)
+        next_Q = self.net(next_state, model="target")[
+            np.arange(0, self.batch_size), best_action
+        ]
+        return (reward + (1 - done.float()) * self.gamma * next_Q).float()
+
+    def update_Q_pi(self, td_estimate, td_target):
+        loss = self.loss(td_estimate, td_target)
+        self.optimizer.zero_grad()
         loss.backward()
-        self.Q_eval.optimizer.step()
+        self.optimizer.step()
+        return loss.item()
 
-        self.epsilon = self.epsilon - self.eps_dec if self.epsilon > self.eps_min \
-                        else self.eps_min
+    def sync_Q_target(self):
+        self.net.target.load_state_dict(self.net.pi.state_dict())

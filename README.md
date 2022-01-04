@@ -9,7 +9,7 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 
 ## TODO
 *Dates are in MM/DD*
-- Create the ~~DQN~~ **(01/03, 11:07)**, Mario agent, Replay Memory, Learn methods
+- Create the ~~DQN~~ **(01/03, 11:07)**, Mario agent, ~~Replay Memory~~ **(01/04, 4:42)**, Learn methods
 - Implement image transformations, so grayscale & image rescale are probs most important
 - Maybe test out PPO instead of DQN
 - Make sure to graph it out, see if there is real "learning"
@@ -45,3 +45,4 @@ warn(f"Failed to load image Python extension: {e}")
 - PyTorch DQN Tutorial: https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 - PyTorch Mario Tutorial: https://pytorch.org/tutorials/intermediate/mario_rl_tutorial.html
 - Explanation on what parameters to use though I don't really understand it either: https://stats.stackexchange.com/questions/196646/what-is-the-significance-of-the-number-of-convolution-filters-in-a-convolutional
+- DeepLizard's Tutorial: https://deeplizard.com/learn/video/FU-sNVew9ZA
