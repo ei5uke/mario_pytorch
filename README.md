@@ -8,7 +8,8 @@ With inspiration from pytorch's own tutorial of gym-super-mario-bros, their tuto
 I'm currently on my MacBook Air with the M1 processor, so there are code adjustments specifically for that. I have not tested this code on other OS's. It's kinda ironic using PyTorch w/o a GPU but I can't use TensorFlow so here I am.
 
 ## TODO
-- Create the DQN, Mario agent, Replay Memory, Learn methods
+*Dates are in MM/DD*
+- Create the ~~DQN~~ **(01/03, 11:07)**, Mario agent, Replay Memory, Learn methods
 - Implement image transformations, so grayscale & image rescale are probs most important
 - Maybe test out PPO instead of DQN
 - Make sure to graph it out, see if there is real "learning"
@@ -33,3 +34,14 @@ The remaining part is tbd but I'll probably make some kind of main.py file which
 ```shell
 python3 main.py
 ```
+
+When running, some errors such as this might pop up but don't worry about them.
+```shell
+warn(f"Failed to load image Python extension: {e}")
+```
+
+## Sources
+- IBM's Introduction to CNN's: https://www.ibm.com/cloud/learn/convolutional-neural-networks
+- PyTorch DQN Tutorial: https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
+- PyTorch Mario Tutorial: https://pytorch.org/tutorials/intermediate/mario_rl_tutorial.html
+- Explanation on what parameters to use though I don't really understand it either: https://stats.stackexchange.com/questions/196646/what-is-the-significance-of-the-number-of-convolution-filters-in-a-convolutional
