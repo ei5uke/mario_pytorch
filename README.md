@@ -9,10 +9,10 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 
 ## TODO
 *Dates are in MM/DD*
-- Create the ~~DQN~~ **(01/03, 11:07)**, Mario agent, ~~Replay Memory~~ **(01/04, 4:42)**, Learn methods
-- Implement image transformations, so grayscale & image rescale are probs most important
+- Create the ~~DQN~~ **(01/03, 11:07pm)**, ~~Mario agent~~ **(Not doing this, instead added functions to the main.py), ~~Replay Memory~~ **(01/04, 4:42pm)**, ~~Learn methods~~ **(01/04, 10:21pm)**
+- Implement image transformations, so grayscale & image rescale are probs most important **(Copied PyTorch's so probably want to create my own version)**
 - Maybe test out PPO instead of DQN
-- Make sure to graph it out, see if there is real "learning"
+- Make sure to graph it out, see if there is real "learning" **(Watching the render to see if my Mario is achieving superhuman gameplay)**
 - Somehow save the model for future use (i know there is someway to do this idr how)
 
 ## Installation
@@ -41,8 +41,13 @@ warn(f"Failed to load image Python extension: {e}")
 ```
 
 ## Sources
+Just general info:
 - IBM's Introduction to CNN's: https://www.ibm.com/cloud/learn/convolutional-neural-networks
-- PyTorch DQN Tutorial: https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
-- PyTorch Mario Tutorial: https://pytorch.org/tutorials/intermediate/mario_rl_tutorial.html
+- DQN paper: https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf
 - Explanation on what parameters to use though I don't really understand it either: https://stats.stackexchange.com/questions/196646/what-is-the-significance-of-the-number-of-convolution-filters-in-a-convolutional
+
+Tutorials that I followed:
+- brthor's tutorial (the one that helped me out the most to understand how to create the online vs target functions): https://www.youtube.com/watch?v=NP8pXZdU-5U&t=1842s
+- PyTorch Mario Tutorial (straight up copied their environment transformation functions): https://pytorch.org/tutorials/intermediate/mario_rl_tutorial.html
+- PyTorch DQN Tutorial: https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 - DeepLizard's Tutorial: https://deeplizard.com/learn/video/FU-sNVew9ZA
