@@ -4,6 +4,8 @@ Implementation of Super-Mario-Bros RL through PyTorch
 ## About
 With inspiration from pytorch's own tutorial of gym-super-mario-bros, their tutorial on DQNs, and the video "Deep Q Learning is Simple with PyTorch" by @philtabor, I am currently working on making a more elligible version of Super Mario Bros RL using PyTorch. Reading the PyTorch tutorial was useful but I'm kinda biased towards @philtabor's more concise DQN algorithm. Thus, I wanted to combine the two and try to self-teach RL.
 
+So far, this needs a lot of work. I ran it for probably 3 hours to achieve a final average score of 2000, and when I rendered it Mario decided to just get stuck infront of a pipe and didn't move. Reinforcement Learning!
+
 ## Limitations
 I'm currently on my MacBook Air with the M1 processor, so there are code adjustments specifically for that. I have not tested this code on other OS's. It's kinda ironic using PyTorch w/o a GPU but I can't use TensorFlow so here I am.
 
@@ -30,10 +32,12 @@ pip install --user --upgrade git+http://github.com/pyglet/pyglet@pyglet-1.5-main
 pip install torch torchvision torchaudio
 ```
 
-The remaining part is tbd but I'll probably make some kind of main.py file which you just run 
+After you get those installations, run this:
 ```shell
 python3 main.py
 ```
+It will probably take like a good time for the code to run and get an average reward that is good.
+
 
 When running, some errors such as this might pop up but don't worry about them.
 ```shell
