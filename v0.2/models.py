@@ -1,8 +1,8 @@
 """
 models.py
 
-This file holds all the current and future models used in the main.py file. Currently, I will have added a CNN model that follows
-the DQN policy, but I hope to add PPO, A2C, and other algorithms in the future.
+This file holds all the current and future models used in the main.py file. Currently, I will have added a CNN model that follows the DQN 
+policy, but I hope to add PPO, A2C, and other algorithms in the future.
 """
 
 # The general imports from torch
