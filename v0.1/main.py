@@ -1,9 +1,11 @@
+# gym and super mario bros libraries
 import gym
 import gym_super_mario_bros
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from nes_py.wrappers import JoypadSpace
 from gym.wrappers import FrameStack
 
+# torch libraries
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -14,7 +16,7 @@ import random
 import itertools
 from collections import deque
 
-#from agent import Agent
+# functions from our other files
 from dqn import DQN
 from transformation import GrayScaleObservation, SkipFrame, ResizeObservation
 
@@ -37,17 +39,19 @@ env = GrayScaleObservation(env)
 env = ResizeObservation(env, shape=84)
 env = FrameStack(env, num_stack=4)
 
-memory = deque(maxlen=MEMORY_SIZE)
-reward_buffer = deque([0.0], maxlen=100)
+memory = deque(maxlen=MEMORY_SIZE)          # our memory buffer to store past games
+reward_buffer = deque([0.0], maxlen=100)    # reward buffer to store rewards
 
 episode_reward = 0.0
 
-online_net = DQN(env)
-target_net = DQN(env)
+online_net = DQN(env)                       # our online function
+target_net = DQN(env)                       # our target function
 target_net.load_state_dict(online_net.state_dict())
 optimizer = optim.Adam(online_net.parameters(), lr=LEARNING_RATE)
 
 obs = env.reset()
+
+# this is used to fill our memory buffer for later use
 for _ in range(MIN_REPLAY_SIZE):
     action = env.action_space.sample()
 
@@ -59,6 +63,7 @@ for _ in range(MIN_REPLAY_SIZE):
     if done:
         obs = env.reset()
 
+# this is our actual learning loop
 obs = env.reset()
 for step in itertools.count():
     epsilon = np.interp(step, [0, EPSILON_DECAY], [EPSILON_START, EPSILON_END]) # for EPSILON_DECAY steps, it will be between start and end, and be at end after that
@@ -68,10 +73,9 @@ for step in itertools.count():
     if rnd_sample <= epsilon: #this is our exploration vs greedy method
         action = env.action_space.sample()
     else:
-        action = online_net.act(np.array(obs)) # note that i chnaged this
+        action = online_net.act(np.array(obs)) # we wrap the state with np.array as our env returns lazyframes and we don't want that
 
     obs_, reward, done, _ = env.step(action)
-    #print(obs_.size)
     transition = (obs, action, reward, done, obs_)
     memory.append(transition)
     obs = obs_
@@ -85,8 +89,8 @@ for step in itertools.count():
         episode_reward = 0.0
 
     # After solved, watch it play
-    if len(reward_buffer) >= 10:
-        if np.mean(reward_buffer) >= 1000: # probably want to change this to a higher score
+    if len(reward_buffer) >= 20:
+        if np.mean(reward_buffer) >= 2000: # probably want to change this to a higher score but it took me 3 hours to get to even 2000 so idk
             while True:
                 action = online_net.act(np.array(obs)) # i also changed this
 
