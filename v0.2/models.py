@@ -59,42 +59,40 @@ class Model(nn.Module):
 
 def train(online, target, transitions, num_actions, device, gamma=0.99):
     # Get all necessary information, make them into a PyTorch tensor and send to the device    
-
-    # this follows Jack of Some's tutorial
-    # states = torch.stack([torch.Tensor(s.state) for s in transition]).to(device)
-    # rewards = torch.stack([torch.Tensor([s.reward]) for s in transition]).to(device)
-    # dones = torch.stack([torch.Tensor([0]) if s.done else torch.Tensor([1]) for s in transition]).to(device)
-    # states_ = torch.stack([torch.Tensor(s.state_) for s in transition]).to(device)
-    # actions = [s.action for s in transition] # exception because actions are just ints and don't have to be tensors
-
-    # i'm trying out a combination of Deep RL hands-on's method and brthor's
+    # currently i'm trying out a combination of Deep RL hands-on's method and brthor's
+    # we first convert to nparrays because it's faster to change into tensors from nparrays compared to pyarrays
     states = np.asarray([t[0] for t in transitions])
     actions = np.asarray([t[1] for t in transitions])
     rewards = np.asarray([t[2] for t in transitions])
     dones = np.asarray([t[3] for t in transitions])
     states_ = np.asarray([t[4] for t in transitions])
 
+    # we then change the nparrays to tensors to enable our device to compute
+    # actions, rewards, dones are unsqueezed to enable hadamard products and addition of same dimension tensors
     states = torch.as_tensor(states, dtype=torch.float32).to(device)
     actions = torch.as_tensor(actions, dtype=torch.int64).unsqueeze(-1).to(device)
     rewards = torch.as_tensor(rewards, dtype=torch.float32).unsqueeze(-1).to(device)
     dones = torch.as_tensor(dones, dtype=torch.float32).unsqueeze(-1).to(device)
     states_ = torch.as_tensor(states_, dtype=torch.float32).to(device)
 
-    # Essentially from here we want to calculate squared error of our q_values and our optimal q_values
+    # Essentially from here on, we want to calculate squared error of our q_values and our optimal q_values
     # Disable gradient calculation because we aren't going to update it later -> makes it more memory efficient
     with torch.no_grad():
         qvals_opt = target(states_).max(dim=1, keepdim=True)[0] # Calculate the "Bellman" equation using the target net
 
+    # in PyTorch, multiplying tensors with * has in-place value multiplcation aka hadamard product
     y = rewards + gamma * (1 - dones) * qvals_opt # Get our y value
-    online.opt.zero_grad() # Clear our data to not use past gradients; unsure if i should place this here or later on
-    qvals = online(states) # get our current qvalues 
+    #online.opt.zero_grad() # Clear our data to not use past gradients; unsure if i should place this here or later on
+    qvals = online(states) # get our current qvalues passing them to the online model
+    qvals = torch.gather(input=qvals, dim=1, index=actions) # get our qvalues based on our actions
 
     # clipping the error term between -1 and 1 inclusive; this is based off of the paper but it's not used much in other tutorials idk why
     # also, while the paper uses this clipping method, other tutorials use huber loss or smoothl1 but i'm just strictly following the paper for today
+    # i'm still figuring out how to do this because we apparently want to clip the gradient not the error term
     #loss = qvals - y 
     #loss = loss if -1<=loss<=1 else (-1 if loss < -1 else 1)
     loss = nn.MSELoss()(qvals, y) # same as loss = ((qvals - y) ** 2).mean()
-
+    online.opt.zero_grad()
     loss.backward()
     model.opt.step()
     return loss
