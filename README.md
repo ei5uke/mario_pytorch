@@ -17,7 +17,8 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 - ~~Create the Model~~ (1/8)
 - ~~Create the Memory~~ (1/8)
 - ~~Create the Train step~~ (1/9 technically)
-    - I've completed it for the most part because I'm not sure how to implement the clipping of the Squared Error term between [-1, 1] bc it's squared so when will it ever be negative?
+    - ~~Calculate loss~~ (1/10)
+    - Clipping the error term or the gradient I have no idea which one
 - Create the frame transitions
     - grayscale
     - framestacking
@@ -27,7 +28,7 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
     - Main run loop
     - Save model
 
-*v0.1*\
+*v0.1*
 - Create the ~~DQN~~ **(01/03, 11:07pm)**, ~~Mario agent~~ **(Not doing this, instead added functions to the main.py), ~~Replay Memory~~ **(01/04, 4:42pm)**, ~~Learn methods~~ **(01/04, 10:21pm)**
 - Implement image transformations, so grayscale & image rescale are probs most important **(Copied PyTorch's so probably want to create my own version)**
 - Maybe test out PPO instead of DQN
@@ -35,10 +36,13 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 - ~~Somehow save the model for future use (i know there is someway to do this idr how)~~ **(01/08)**
 
 ## Comments
-*01/08/2021*\
+*01/10/2022*\
+Ok so I'm like a good 80% there in understanding the train step of DQN. I understand how we unpack the transition tuple, why we unsqueeze and gather, and how to calculate the loss. The remaining 20% is to understand where to place the zero_grad() and figure out how to clip the error. I've heard from tutorials that there is a huge debate on the confusion of what to clip, so I guess I'll try to learn where to do so.
+
+*01/08/2022*\
 This repo feels more like a blog series or diary of my journey learning RL... Maybe I change it to that sometime later to seriously showcase my progress. Anyway, yea so I've noticed a few things: 1) definitely read the published journals 2) maybe find if there are multiple versions of journals. It looks like DeepMind has published two papers: "Playing Atari with Deep RL" and "Human-level control through deep rl" and it seems that most tutorials and guides follow the second one. So yea, probably look if there are multiple papers because that almost caught me off guard. Also, reading PyTorch's documentation on nn.Conv2d was helpful in learning what the output of the CNN is because we need that to connect it to the FC layers which (I may be wrong about this) isn't written in the paper. 
 
-*01/06/2021*\
+*01/06/2022*\
 So far, this needs a lot of work. I ran it for probably 3 hours **(01/05, from 12pm ish to around 2:40pm)** to achieve a final average score of 2000, and when I rendered it Mario decided to just get stuck infront of a pipe and didn't move. Reinforcement Learning! The state transformation techniques used follows PyTorch's tutorial on mario which follows DeepMind's paper, however, these techniques are used on Atari games, not nes, so I probably need to find some way to tinker with it. I think all the ideas used are definitely helping, though, so I guess I need to either add more techniques or change the hyperparameters or even the neural network nodes.
 
 ## Installation and Running
@@ -79,13 +83,19 @@ e.g. x = torch.Tensor([1, 2], [3, 4])
 
 *torch.squeeze(x)* and *torch.unsqueeze(x, n)*\
 squeezes depending on input if there is none just squeeze\
-e.g. x = torch.zeros(2, 1, 2, 1, 2)
+e.g. x = torch.zeros(2, 1, 2, 1, 2)\
 y = torch.squeeze(x)
-y.size() # torch.size([2, 2, 2]), so it removed all dimensions of 1
+- y.size() # torch.size([2, 2, 2]), so it removed all dimensions of 1\
 y = torch.squeeze(x, 0)
-y.size() # torch.size([2, 1, 2, 1, 2]) nothing changed bc dimension 0 isn't size 1
-y = torch.squeeze(x, 1)
-y.size() # torch.size([2, 2, 1, 2]) it got removed because its dimension is size 1
+- y.size() # torch.size([2, 1, 2, 1, 2]) nothing changed bc dimension 0 isn't size 1\
+y = torch.squeeze(x, 1)\
+- y.size() # torch.size([2, 2, 1, 2]) it got removed because its dimension is size 1
+
+*torch.gather(input, dim, index)*\
+honestly just read this: https://stackoverflow.com/questions/50999977/what-does-the-gather-function-do-in-pytorch-in-layman-terms \ 
+
+*Hadamard Product*\
+- When using * to find the product of 2+ tensors, it outputs the hadamard product, aka inplace element multiplication. Thus, the tensors must have the same exact dimensions.
 
 ## Sources
 Just general info:
