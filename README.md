@@ -17,16 +17,17 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 - ~~Create the Model~~ (1/8)
 - ~~Create the Memory~~ (1/8)
 - ~~Create the Train step~~ (1/9 technically)
-    - ~~Calculate loss~~ (1/10)
+    - ~~Calculate loss~~ (1/10), might switch to Huber or Smoothl1loss depending on how bad MSE is 
     - Clipping the error term or the gradient I have no idea which one
 - Create the frame transitions
-    - grayscale
-    - framestacking
-    - frame skipping
-    - image scaling
+    - ~~grayscale~~ (1/11)
+    - ~~framestacking~~ (1/11)
+    - ~~frame skipping~~ (1/11)
+    - ~~image scaling~~ (1/11)
+    - need to think of more transitions though
 - Create main run file
-    - Main run loop
-    - Save model
+    - ~~Main run loop~~ (1/12)
+    - ~~Save model~~ (1/12)
 
 *v0.1*
 - Create the ~~DQN~~ **(01/03, 11:07pm)**, ~~Mario agent~~ **(Not doing this, instead added functions to the main.py), ~~Replay Memory~~ **(01/04, 4:42pm)**, ~~Learn methods~~ **(01/04, 10:21pm)**
@@ -35,7 +36,10 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 - Make sure to graph it out, see if there is real "learning" **(Watching the render to see if my Mario is achieving superhuman gameplay, also using wandb)**
 - ~~Somehow save the model for future use (i know there is someway to do this idr how)~~ **(01/08)**
 
-## Comments
+## Diary(?) or Comments I guess
+*01/13/2022*\
+I'm trying out DDQN following the paper published by DeepMind but I'm trying out my own hyperparameters to speed up training. I'm trying it out with breakout first for now and it really sucks. I've ran breakout to train overnight and it reached an average score of 20-ish when the average score should be around 300+ I believe. Definitely there has to be a way to make this better, I mean the OpenAI Retro Contest featuring Sonic had solutions that learned within 2 hrs, so there has to be a way to make this better not using 8 hrs. For now, it seems I'll try to tinker with all this with breakout, and then whatever new techniques/tricks I implement I'll apply them to mario.
+
 *01/10/2022*\
 Ok so I'm like a good 80% there in understanding the train step of DQN. I understand how we unpack the transition tuple, why we unsqueeze and gather, and how to calculate the loss. The remaining 20% is to understand where to place the zero_grad() and figure out how to clip the error. I've heard from tutorials that there is a huge debate on the confusion of what to clip, so I guess I'll try to learn where to do so.
 
@@ -83,18 +87,18 @@ e.g. x = torch.Tensor([1, 2], [3, 4])
 
 *torch.squeeze(x)* and *torch.unsqueeze(x, n)*\
 squeezes depending on input if there is none just squeeze\
-e.g. x = torch.zeros(2, 1, 2, 1, 2)\
-y = torch.squeeze(x)
-- y.size() # torch.size([2, 2, 2]), so it removed all dimensions of 1\
-y = torch.squeeze(x, 0)
-- y.size() # torch.size([2, 1, 2, 1, 2]) nothing changed bc dimension 0 isn't size 1\
-y = torch.squeeze(x, 1)\
-- y.size() # torch.size([2, 2, 1, 2]) it got removed because its dimension is size 1
+e.g. x = torch.zeros(2, 1, 2, 1, 2)
+- y = torch.squeeze(x)\
+y.size() # torch.size([2, 2, 2]), so it removed all dimensions of 1\
+- y = torch.squeeze(x, 0)\
+y.size() # torch.size([2, 1, 2, 1, 2]) nothing changed bc dimension 0 isn't size 1\
+- y = torch.squeeze(x, 1)\
+y.size() # torch.size([2, 2, 1, 2]) it got removed because its dimension is size 1\
 
 *torch.gather(input, dim, index)*\
-honestly just read this: https://stackoverflow.com/questions/50999977/what-does-the-gather-function-do-in-pytorch-in-layman-terms \ 
-
-*Hadamard Product*\
+honestly just read this: https://stackoverflow.com/questions/50999977/what-does-the-gather-function-do-in-pytorch-in-layman-terms
+\
+*Hadamard Product*
 - When using * to find the product of 2+ tensors, it outputs the hadamard product, aka inplace element multiplication. Thus, the tensors must have the same exact dimensions.
 
 ## Sources
@@ -105,6 +109,7 @@ Just general info:
 - **Better** DQN paper: https://web.stanford.edu/class/psych209/Readings/MnihEtAlHassibis15NatureControlDeepRL.pdf
 - DQN paper: https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf
 - Explanation of zerograd: https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
+- Epoch vs Episode: https://stats.stackexchange.com/questions/250943/what-is-the-difference-between-episode-and-epoch-in-deep-q-learning
 
 Tutorials that I followed:
 - Jack of Some's tutorial: https://www.youtube.com/watch?v=WVBp4Cj2lXo&list=PLd_Oyt6lAQ8Q0MaTG41iwPdy9GQmoz8dG
