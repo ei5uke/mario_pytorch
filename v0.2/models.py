@@ -22,7 +22,7 @@ import wandb                            # Weights and Biases; helps to visualize
 
 # This is our CNN model, which I'm just calling Model for convenience
 class Model(nn.Module):
-    def __init__(self, input_shape, num_actions):
+    def __init__(self, input_shape, num_actions, lr):
         super(Model, self).__init__()
         self.input_shape = input_shape                        # ideally this is (N,C,H,W)
         self.num_actions = num_actions                        # this is just the # of actions we can take
@@ -32,26 +32,31 @@ class Model(nn.Module):
         conv_size = self.calculate_output(84, 8, 0, 4)
         conv_size = self.calculate_output(conv_size, 4, 0, 2)
         conv_size = self.calculate_output(conv_size, 3, 0, 1)
+        #conv_size = self.calculate_output(conv_size, 7, 0, 1)
         conv_size = conv_size * conv_size * 64
 
         # Our main Neural Net that follows DeepMind's DQN paper.
         # We make sure to pass in the number of channels and output the number of actions our agent can take.
         self.net = nn.Sequential(
-            nn.Conv2d(self.input_shape[1], 32, kernel_size=(8,8), stride=4),
+            nn.Conv2d(self.input_shape[0], 32, kernel_size=(8,8), stride=4),
             nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=(4,4), stride=2),
             nn.ReLU(),
             nn.Conv2d(64, 64, kernel_size=(3,3), stride=1),
             nn.ReLU(),
+            # the next two lines are experimental
+            #nn.Conv2d(64, 1024, kernel_size=(7,7), stride=1),
+            #nn.ReLU(),
             nn.Flatten(),
             nn.Linear(conv_size, 512),
             nn.ReLU(),
             nn.Linear(512, self.num_actions)
+            
         )
-        self.opt = optim.Adam(self.net.parameters(), lr=LEARNING_RATE)
+        self.opt = optim.Adam(self.net.parameters(), lr=lr)
 
     def forward(self, x):
-        return self.net(x)
+        return self.net(x/255.0) # normalizing values
 
     # This follows equation given in the PyTorch Conv2d documentation under the shape section.
     def calculate_output(self, n, f, p, s):
@@ -70,31 +75,38 @@ def train(online, target, transitions, num_actions, device, gamma=0.99):
     # we then change the nparrays to tensors to enable our device to compute
     # actions, rewards, dones are unsqueezed to enable hadamard products and addition of same dimension tensors
     states = torch.as_tensor(states, dtype=torch.float32).to(device)
-    actions = torch.as_tensor(actions, dtype=torch.int64).unsqueeze(-1).to(device)
-    rewards = torch.as_tensor(rewards, dtype=torch.float32).unsqueeze(-1).to(device)
-    dones = torch.as_tensor(dones, dtype=torch.float32).unsqueeze(-1).to(device)
+    actions = torch.as_tensor(actions, dtype=torch.int64).to(device) # readd .unsqueeze(0) before to(device) if it doesn't work
+    rewards = torch.as_tensor(rewards, dtype=torch.float32).to(device) # here and 
+    dones = torch.as_tensor(dones, dtype=torch.float32).to(device) # here also
     states_ = torch.as_tensor(states_, dtype=torch.float32).to(device)
 
     # Essentially from here on, we want to calculate squared error of our q_values and our optimal q_values
     # Disable gradient calculation because we aren't going to update it later -> makes it more memory efficient
     with torch.no_grad():
-        qvals_opt = target(states_).max(dim=1, keepdim=True)[0] # Calculate the "Bellman" equation using the target net
+        # DQN
+        #qvals_opt = target(states_).max(dim=1, keepdim=True)[0] # Calculate the "Bellman" equation using the target net
+
+        # DDQN
+        qvals_target = online(states_) # get next q values, get best action essentially
+        best_action = torch.argmax(qvals_target, axis=1)
+        qvals_next = target(states_)[np.arange(0, 32), best_action]
 
     # in PyTorch, multiplying tensors with * has in-place value multiplcation aka hadamard product
-    y = rewards + gamma * (1 - dones) * qvals_opt # Get our y value
-    #online.opt.zero_grad() # Clear our data to not use past gradients; unsure if i should place this here or later on
-    qvals = online(states) # get our current qvalues passing them to the online model
-    qvals = torch.gather(input=qvals, dim=1, index=actions) # get our qvalues based on our actions
 
-    # clipping the error term between -1 and 1 inclusive; this is based off of the paper but it's not used much in other tutorials idk why
-    # also, while the paper uses this clipping method, other tutorials use huber loss or smoothl1 but i'm just strictly following the paper for today
-    # i'm still figuring out how to do this because we apparently want to clip the gradient not the error term
-    #loss = qvals - y 
-    #loss = loss if -1<=loss<=1 else (-1 if loss < -1 else 1)
-    loss = nn.MSELoss()(qvals, y) # same as loss = ((qvals - y) ** 2).mean()
+    # DQN y value
+    # y = rewards + gamma * (1 - dones) * qvals_opt # Get our y value
+    #qvals = torch.gather(input=qvals, dim=1, index=actions) # get our qvalues based on our actions
+
+    # DDQN y value
+    y = rewards + gamma * (1 - dones) * qvals_next
+    qvals = online(states)[np.arange(0, 32), actions] # get our current qvalues passing them to the online model
+
+    #loss = nn.MSELoss()(qvals, y) # same as loss = ((qvals - y) ** 2).mean()
+    loss = nn.HuberLoss()(qvals, y)
+    #loss = nn.SmoothL1Loss()(qvals, y)
     online.opt.zero_grad()
     loss.backward()
-    model.opt.step()
+    online.opt.step()
     return loss
 
 class Memory:
@@ -108,7 +120,7 @@ class Memory:
         self.idx += 1
 
     def sample(self, batch_size):
-        assert num_samples < min(self.idx, self.buffer_size), "Has to sample less than number of memories"
+        assert batch_size < min(self.idx, self.buffer_size), "Has to sample less than number of memories"
         if self.idx < self.buffer_size:
             return sample(self.buffer[:self.idx], batch_size)
         return sample(self.buffer, batch_size)
