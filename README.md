@@ -3,7 +3,9 @@ My Journey (or I guess Diary) in learning RL through Mario and PyTorch
 
 ## About
 *v0.2*, 01/08/2021 - current\
-Following implementation of Youtuber "Jack of Some"'s implementation of RL through his 'DQN in PyTorch Stream _ of N' series, Deep RL Hands-on book by Maxim Lapan, and following the DQN paper. It's kinda repetitive, redoing the project again but while the first time I was easily able to understand the replay buffer, I didn't really understand anything else. So far, I'm more clear on the DQN algorithm itself, how PyTorch CNN's work, etc.
+Following implementation of Youtuber "Jack of Some"'s implementation of RL through his 'DQN in PyTorch Stream _ of N' series, Deep RL Hands-on book by Maxim Lapan, and following the DQN paper. It's kinda repetitive, redoing the project again but while the first time I was easily able to understand the replay buffer, I didn't really understand anything else. So far, I'm more clear on the DQN algorithm itself, how PyTorch CNN's work, etc. 
+\
+While I'm more confident in understanding essentially everything, I still have really low scores in breakout so I'm trying out DDQN and other methods.
 
 *v0.1*\
 With inspiration from pytorch's own tutorial of gym-super-mario-bros, their tutorial on DQNs, and the video "Deep Q Learning is Simple with PyTorch" by @philtabor, I am currently working on making a more elligible version of Super Mario Bros RL using PyTorch. Reading the PyTorch tutorial was useful but I'm kinda biased towards @philtabor's more concise DQN algorithm. Thus, I wanted to combine the two and try to self-teach RL. Adding to this, I used various other resources, and realized that brthor's youtube video (link in the sources) which follows PyTorch's tutorial was a clear way in understanding how RL works, and decided to follow that.
@@ -16,6 +18,10 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 *v0.2*
 - ~~Create the Model~~ (1/8)
 - ~~Create the Memory~~ (1/8)
+    - ~~Swap to DDQN~~ (1/14)
+    - Implement A2C
+    - Implement PPO
+    - Implement Rainbow
 - ~~Create the Train step~~ (1/9 technically)
     - ~~Calculate loss~~ (1/10), might switch to Huber or Smoothl1loss depending on how bad MSE is 
     - Clipping the error term or the gradient I have no idea which one
@@ -37,6 +43,9 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 - ~~Somehow save the model for future use (i know there is someway to do this idr how)~~ **(01/08)**
 
 ## Diary(?) or Comments I guess
+*01/14/2022*\
+I followed the DDQN algorithm and within like 5 hrs, or like around 20 epochs (which each epoch consists of 50000 parameter updates), it got an average score of 17, which although is much better than what I was doing before, it plateaus from there because epsilon is 0.1. Still need much tinkering but I think so far it's good. The DDQN algorithm is clearly working but now I need to figure out how often to consider an epoch and maybe somehow tinker more with the loss function possibly. I've uploaded updated code but its for breakout; when I get good scores on breakout, I'll try it on mario. 
+
 *01/13/2022*\
 I'm trying out DDQN following the paper published by DeepMind but I'm trying out my own hyperparameters to speed up training. I'm trying it out with breakout first for now and it really sucks. I've ran breakout to train overnight and it reached an average score of 20-ish when the average score should be around 300+ I believe. Definitely there has to be a way to make this better, I mean the OpenAI Retro Contest featuring Sonic had solutions that learned within 2 hrs, so there has to be a way to make this better not using 8 hrs. For now, it seems I'll try to tinker with all this with breakout, and then whatever new techniques/tricks I implement I'll apply them to mario.
 
@@ -98,6 +107,7 @@ y.size() # torch.size([2, 2, 1, 2]) it got removed because its dimension is size
 *torch.gather(input, dim, index)*\
 honestly just read this: https://stackoverflow.com/questions/50999977/what-does-the-gather-function-do-in-pytorch-in-layman-terms
 \
+\
 *Hadamard Product*
 - When using * to find the product of 2+ tensors, it outputs the hadamard product, aka inplace element multiplication. Thus, the tensors must have the same exact dimensions.
 
@@ -106,6 +116,7 @@ Just general info:
 - Sutton and Barto's RL book; probably want to go to at least the MDP part to even barely understand DQN's
 - Deep RL Hands-on by Maxim Lapan; the github with the source code (though I believe it's outdated so I prefer the code of the textbook): https://github.com/PacktPublishing/Deep-Reinforcement-Learning-Hands-On
 - IBM's Introduction to CNN's: https://www.ibm.com/cloud/learn/convolutional-neural-networks
+- DDQN paper: https://arxiv.org/pdf/1509.06461.pdf
 - **Better** DQN paper: https://web.stanford.edu/class/psych209/Readings/MnihEtAlHassibis15NatureControlDeepRL.pdf
 - DQN paper: https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf
 - Explanation of zerograd: https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
@@ -114,6 +125,7 @@ Just general info:
 Tutorials that I followed:
 - Jack of Some's tutorial: https://www.youtube.com/watch?v=WVBp4Cj2lXo&list=PLd_Oyt6lAQ8Q0MaTG41iwPdy9GQmoz8dG
 - brthor's tutorial: https://www.youtube.com/watch?v=NP8pXZdU-5U&t=1842s
+- Fabio M. Graetz tutorial (though it's in Tensorflow): https://towardsdatascience.com/tutorial-double-deep-q-learning-with-dueling-network-architectures-4c1b3fb7f756
 - PyTorch Mario Tutorial: https://pytorch.org/tutorials/intermediate/mario_rl_tutorial.html
 - PyTorch DQN Tutorial: https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 - DeepLizard's Tutorial: https://deeplizard.com/learn/video/FU-sNVew9ZA
