@@ -37,8 +37,7 @@ class ModifyObservation(gym.ObservationWrapper):
 
     # modify our image size and grayscale
     def modify(self, state):
-        state = np.transpose(state, (2, 0, 1)) # change [H, W, C] to [C, H, W]
-        state = cv2.resize(state, (self.w, self.h)) # change dimensions to (84, 84)
+        state = cv2.resize(state, (84, 84)) # change dimensions to (84, 84)
         state = cv2.cvtColor(state, cv2.COLOR_RGB2GRAY) # convert to grayscale
         return state
 
