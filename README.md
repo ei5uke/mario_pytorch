@@ -46,6 +46,8 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 *01/14/2022*\
 I followed the DDQN algorithm and within like 5 hrs, or like around 20 epochs (which each epoch consists of 50000 parameter updates), it got an average score of 17, which although is much better than what I was doing before, it plateaus from there because epsilon is 0.1. Still need much tinkering but I think so far it's good. The DDQN algorithm is clearly working but now I need to figure out how often to consider an epoch and maybe somehow tinker more with the loss function possibly. I've uploaded updated code but its for breakout; when I get good scores on breakout, I'll try it on mario. 
 
+![ddqn_1](https://user-images.githubusercontent.com/55261758/149607611-408420a3-46ac-4862-acae-798ffe52119c.png)
+
 *01/13/2022*\
 I'm trying out DDQN following the paper published by DeepMind but I'm trying out my own hyperparameters to speed up training. I'm trying it out with breakout first for now and it really sucks. I've ran breakout to train overnight and it reached an average score of 20-ish when the average score should be around 300+ I believe. Definitely there has to be a way to make this better, I mean the OpenAI Retro Contest featuring Sonic had solutions that learned within 2 hrs, so there has to be a way to make this better not using 8 hrs. For now, it seems I'll try to tinker with all this with breakout, and then whatever new techniques/tricks I implement I'll apply them to mario.
 
