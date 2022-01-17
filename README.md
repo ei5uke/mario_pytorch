@@ -2,7 +2,10 @@
 My Journey (or I guess Diary) in learning RL through Mario and PyTorch
 
 ## About
-*v0.2*, 01/08/2021 - current\
+*v0.3*, 01/17/2022 - current\
+Now I guess I'll be working on PPO. I'll be following both Eric Yang Yu's tutorial and Costa Huang's tutorial, but since they are noticeably different I'll be tinkering around with stuff. Also, I'll be trying to learn how entropy works and implementing advantage estimations like GAE
+
+*v0.2*, 01/08/2022 - 01/16/2022\
 Following implementation of Youtuber "Jack of Some"'s implementation of RL through his 'DQN in PyTorch Stream _ of N' series, Deep RL Hands-on book by Maxim Lapan, and following the DQN paper. It's kinda repetitive, redoing the project again but while the first time I was easily able to understand the replay buffer, I didn't really understand anything else. So far, I'm more clear on the DQN algorithm itself, how PyTorch CNN's work, etc. 
 \
 While I'm more confident in understanding essentially everything, I still have really low scores in breakout so I'm trying out DDQN and other methods.
@@ -19,9 +22,6 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 - ~~Create the Model~~ (1/8)
 - ~~Create the Memory~~ (1/8)
     - ~~Swap to DDQN~~ (1/14)
-    - Implement A2C
-    - Implement PPO
-    - Implement Rainbow
 - ~~Create the Train step~~ (1/9 technically)
     - ~~Calculate loss~~ (1/10), might switch to Huber or Smoothl1loss depending on how bad MSE is 
     - Clipping the error term or the gradient I have no idea which one
@@ -121,10 +121,14 @@ Just general info:
 - DDQN paper: https://arxiv.org/pdf/1509.06461.pdf
 - **Better** DQN paper: https://web.stanford.edu/class/psych209/Readings/MnihEtAlHassibis15NatureControlDeepRL.pdf
 - DQN paper: https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf
+- PPO paper: https://arxiv.org/pdf/1707.06347.pdf
+- OpenAI Spinning Up PPO: https://spinningup.openai.com/en/latest/algorithms/ppo.html
 - Explanation of zerograd: https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
 - Epoch vs Episode: https://stats.stackexchange.com/questions/250943/what-is-the-difference-between-episode-and-epoch-in-deep-q-learning
 
 Tutorials that I followed:
+- Costa Huang's PPO: https://youtu.be/MEt6rrxH8W4
+- Eric Yang Yu's PPO tutorial: https://medium.com/@eyyu
 - Jack of Some's tutorial: https://www.youtube.com/watch?v=WVBp4Cj2lXo&list=PLd_Oyt6lAQ8Q0MaTG41iwPdy9GQmoz8dG
 - brthor's tutorial: https://www.youtube.com/watch?v=NP8pXZdU-5U&t=1842s
 - Fabio M. Graetz tutorial (though it's in Tensorflow): https://towardsdatascience.com/tutorial-double-deep-q-learning-with-dueling-network-architectures-4c1b3fb7f756
