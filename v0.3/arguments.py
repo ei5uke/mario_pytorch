@@ -1,5 +1,6 @@
 import argparse
 import os
+import torch
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -13,7 +14,7 @@ def parse_args():
         help="our device used for calculations")
     parser.add_argument("--track", type=bool, default=True,
         help="True -> track with wandb")
-    parser.add_argument("--wandb-project-name", type=str, default="breakout-v0"
+    parser.add_argument("--wandb-project-name", type=str, default="breakout-v0",
         help="our wandb project name")
     parser.add_argument("--wandb-entity", type=str, default=None,
         help="entity/team of wandb project")
@@ -24,6 +25,10 @@ def parse_args():
         help="learning rate of our optimizer")
     parser.add_argument("--total-timesteps", type=int, default=1000000,
         help="total length of learning")
+    parser.add_argument("--num-steps", type=int, default=3600,
+        help="number of steps to run in each rollout")
+    parser.add_argument("--global-step", type=int, default=0,
+        help="keep track of current step")
     # parser.add_argument("--num-envs", type=int, default=8,
     #     help="number of parallel game environments") 
     # parser.add_argument("--anneal-lr", type=lambda x:bool(strtobool(x)), default=True, nargs="?", const=True,
