@@ -18,6 +18,14 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 
 ## TODO
 *Dates are in mm/dd*\
+*v0.3*
+- ~~Create the Network~~ (1/17)
+    - ~~Implement PPO training~~ (1/17)
+    - Implement GAE
+- ~~Define hyperparameters~~ (1/17)
+- Finish main file
+    - Implement frame modifications
+
 *v0.2*
 - ~~Create the Model~~ (1/8)
 - ~~Create the Memory~~ (1/8)
@@ -43,6 +51,9 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 - ~~Somehow save the model for future use (i know there is someway to do this idr how)~~ **(01/08)**
 
 ## Diary(?) or Comments I guess
+*01/17/2022*\
+Ok yea I need to change this into a blog through GitHub pages or maybe Medium. Anyway, yea so I understand PPO decently well, and so I implemented it. Not exactly sure if it tests well on complicated environments but we'll see. Soon I need to learn how to do GAE and include entropy into our gradient.
+
 *01/14/2022*\
 I followed the DDQN algorithm and within like 5 hrs, or like around 20 epochs (which each epoch consists of 50000 parameter updates), it got an average score of 17, which although is much better than what I was doing before, it plateaus from there because epsilon is 0.1. Still need much tinkering but I think so far it's good. The DDQN algorithm is clearly working but now I need to figure out how often to consider an epoch and maybe somehow tinker more with the loss function possibly. I've uploaded updated code but its for breakout; when I get good scores on breakout, I'll try it on mario. 
 
