@@ -23,7 +23,7 @@ def parse_args():
     # arguments for our learning
     parser.add_argument("--lr", type=float, default=2.5e-4,
         help="learning rate of our optimizer")
-    parser.add_argument("--total-timesteps", type=int, default=1000000,
+    parser.add_argument("--total-timesteps", type=int, default=10000000,
         help="total length of learning")
     parser.add_argument("--num-steps", type=int, default=3600,
         help="number of steps to run in each rollout")
@@ -47,10 +47,10 @@ def parse_args():
         help="our clip constant")
     # parser.add_argument("--clip-vloss", type=bool, default=True,
     #     help="True -> clipped loss for value function")
-    # parser.add_argument("--ent", type=float, default=0.01,
-    #     help="entropy constant")
-    # parser.add_argument("--vf", type=float, default=0.5,
-    #     help="value function constant")
+    parser.add_argument("--ent", type=float, default=0.01,
+        help="entropy constant")
+    parser.add_argument("--vf", type=float, default=0.5,
+        help="value function constant")
     # parser.add_argument("--max-grad-norm", type=float, default=0.5,
     #     help="maximum norm for gradient clipping")
     # parser.add_argument("--target-kl", type=float, default=None,
