@@ -9,6 +9,8 @@ import numpy as np
 import random
 from arguments import parse_args
 
+import wandb
+
 # following Costa Huang's video, need to see why we really do this
 def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     nn.init.orthogonal_(layer.weight, std)
@@ -16,10 +18,10 @@ def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     return layer
 
 class Agent(nn.Module):
-    def __init__(self, env, args):
+    def __init__(self, envs, args, writer):
         super(Agent, self).__init__()
         # this follows the DeepMind DQN network
-        self.env = env
+        self.envs = envs
         self.network = nn.Sequential(
             layer_init(nn.Conv2d(4, 32, kernel_size=(8,8), stride=4)),
             nn.ReLU(),
@@ -31,10 +33,11 @@ class Agent(nn.Module):
             layer_init(nn.Linear(3136, 512)),
             nn.ReLU(),
         )
-        self.actor = layer_init(nn.Linear(512, env.action_space.n))
-        self.critic = layer_init(nn.Linear(512, 1))
-        #self.optim = optim.Adam(self.parameters(), lr=self.args.lr, eps=1e-5)
         self.args = args
+        self.writer = writer
+
+        self.actor = layer_init(nn.Linear(512, envs.single_action_space.n))
+        self.critic = layer_init(nn.Linear(512, 1))
 
     # def get_value(self, x):
     #     return self.critic(self.network(x / 255.0))
@@ -45,114 +48,117 @@ class Agent(nn.Module):
         probs = Categorical(logits=logits)
         if action is None:
             action = probs.sample()
-        return action, probs.log_prob(action.squeeze()), probs.entropy(), self.critic(hidden)
+        return action, probs.log_prob(action), probs.entropy(), self.critic(hidden)
 
     def rollout(self):
         # our set of trajectories with already made sizes to promote efficiency
-        obs = torch.zeros(self.args.num_steps, 4, 84, 84).to(self.args.device)
-        actions = torch.zeros(self.args.num_steps, 1).to(self.args.device)
-        logprobs = torch.zeros(self.args.num_steps, 1).to(self.args.device)
-        rewards = torch.zeros(self.args.num_steps, 1).to(self.args.device)
-        dones = torch.zeros(self.args.num_steps, 1).to(self.args.device)
-        values = torch.zeros(self.args.num_steps, 1).to(self.args.device)
+        obs = torch.zeros((self.args.num_steps, self.args.num_envs) + self.envs.single_observation_space.shape).to(self.args.device)
+        actions = torch.zeros((self.args.num_steps, self.args.num_envs) + self.envs.single_action_space.shape).to(self.args.device)
+        logprobs = torch.zeros(self.args.num_steps, self.args.num_envs).to(self.args.device)
+        rewards = torch.zeros(self.args.num_steps, self.args.num_envs).to(self.args.device)
+        dones = torch.zeros(self.args.num_steps, self.args.num_envs).to(self.args.device)
+        values = torch.zeros(self.args.num_steps, self.args.num_envs).to(self.args.device)
 
-        next_obs = torch.Tensor(self.env.reset()).to(self.args.device)
+        #import ipdb; ipdb.set_trace()
 
+        next_obs = torch.Tensor(self.envs.reset()).to(self.args.device)
+        next_done = torch.zeros(self.args.num_envs).to(self.args.device)
         for step in range(0, self.args.num_steps):
-            self.args.global_step += 1
+            self.args.global_step += 1 * self.args.num_envs
 
             obs[step] = next_obs
-            with torch.no_grad():
-                action, logprob, _, value = self.get_action_and_value(next_obs.unsqueeze(0))
-            values[step] = value.flatten()
-            next_obs, reward, done, info = self.env.step(action.cpu().numpy())
-            next_obs, next_done = torch.Tensor(next_obs).to(self.args.device), torch.Tensor(np.array(done)).to(self.args.device)
-            rewards[step] = torch.tensor(reward).to(self.args.device).view(-1) #idk what the view is here for
-            actions[step] = action
-            logprobs[step] = logprob
             dones[step] = next_done
 
-            if "episode" in info.keys():
-                print(f"global_step={self.args.global_step}, episodic_return={info['episode']['r']}")
-                #writer.add_scalar("charts/episodic_return", item["episode"]["r"], global_step)
-                #writer.add_scalar("charts/episodic_length", item["episode"]["l"], global_step)
-                break
-        
+            with torch.no_grad():
+                #action, logprob, _, value = self.get_action_and_value(next_obs.unsqueeze(0))
+                action, logprob, _, value = self.get_action_and_value(next_obs)
+            values[step] = value.flatten()
+            actions[step] = action
+            logprobs[step] = logprob
+            next_obs, reward, done, info = self.envs.step(action.cpu().numpy())
+            next_obs, next_done = torch.Tensor(next_obs).to(self.args.device), torch.Tensor(done).to(self.args.device)
+            rewards[step] = torch.tensor(reward).to(self.args.device).view(-1) #idk what the view is here for
+
+            #print("hi")
+
+            for item in info:
+                if item["ale.lives"] == 0:
+                    break
+
+            # for item in info:
+            #     print(item.keys())
+            #     if "episode" in item.keys():
+            #         print(f"global_step={self.args.global_step}, episodic_return={item['episode']['r']}")
+            #         # writer.add_scalar("charts/episodic_return", item["episode"]["r"], global_step)
+            #         # writer.add_scalar("charts/episodic_length", item["episode"]["l"], global_step)
+            #         break
+        #print(rewards)
         return obs, actions, logprobs, rewards, dones, values
 
-    def compute_returns(self, rewards):
-        with torch.no_grad():
-            returns = torch.zeros_like(rewards).to(self.args.device)
-            discounted_reward = 0
-            idx = 0
-            for reward in reversed(rewards):
-                discounted_reward = reward + discounted_reward * self.args.gamma
-                returns[idx] = discounted_reward
-                idx += 1
-        return returns
+    # def compute_returns(self, rewards):
+    #     with torch.no_grad():
+    #         returns = torch.zeros_like(rewards).to(self.args.device)
+    #         discounted_reward = 0
+    #         idx = 0
+    #         for reward in reversed(rewards):
+    #             discounted_reward = reward + discounted_reward * self.args.gamma
+    #             returns[idx] = discounted_reward
+    #             idx += 1
+    #     return returns
+
+    def calculate_advantage(self, rewards, values):
+        advantages = torch.zeros_like(rewards).to(self.args.device)
+        lastgaelam = 0
+        #import ipdb; ipdb.set_trace()
+        for step in reversed(range(self.args.num_steps-1)):
+            delta = rewards[step] + self.args.gamma * values[step+1] - values[step]
+            advantages[step] = lastgaelam = delta + self.args.gamma * self.args.gae_lambda * lastgaelam
+        returns = advantages + values
+        return advantages, returns
 
     def learn(self, optim):
+        total_rewards = []
         while self.args.global_step <= self.args.total_timesteps:
-            obs, actions, logprobs, rewards, dones, values = self.rollout()
+            # add some anneal rate
+            self.args.alpha = 1.0 - self.args.global_step * (1.0 / self.args.total_timesteps)
+            optim.param_groups[0]["lr"] = self.args.lr * self.args.alpha
 
-            returns = self.compute_returns(rewards)
-            action, log_prob, entropy, values = self.get_action_and_value(obs, actions)
-            
-            #import ipdb; ipdb.set_trace()
+            obs, actions, logprobs, rewards, _, values = self.rollout()
+            total_rewards.append(rewards.sum().detach())
+            wandb.log({'Average Reward': np.mean(total_rewards) / 8.0}, step=self.args.global_step)
 
-            # not following GAE here, will change in the future
-            advantage = returns - values
-            advantage = (advantage - advantage.mean()) / (advantage.std() + 1e-10)
+            advantages, returns = self.calculate_advantage(rewards, values)
 
-            ratio = torch.exp(log_prob - logprobs.squeeze()).unsqueeze(1)
-            actor_loss = (-torch.min(ratio * advantage, torch.clamp(ratio, 1 - self.args.clip, 1 + self.args.clip) * advantage)).mean()
-            critic_loss = nn.MSELoss()(values, returns)
-            entropy_loss = entropy.mean()
-            loss = actor_loss - self.args.ent * entropy_loss + critic_loss * self.args.vf
+            batch_idxs = np.arange(self.args.batch_size)
 
-            optim.zero_grad()
-            loss.backward()
-            #nn.utils.clip_grad_norm_(self.parameters(), )
-            optim.step()
+            obs = obs.reshape((-1,) + self.envs.single_observation_space.shape)
+            logprobs = logprobs.reshape(-1)
+            actions = actions.reshape((-1,) + self.envs.single_action_space.shape)
+            advantages = advantages.reshape(-1)
+            returns = returns.reshape(-1)
+            values = values.reshape(-1)
 
-            # self.actor_optim.zero_grad()
-            # actor_loss.backward(retain_graph=True)
-            # self.actor_optim.step()
+            for _ in range(self.args.update_epochs):
+                np.random.shuffle(batch_idxs)
 
-            # self.critic_optim.zero_grad()
-            # critic_loss.backward()
-            # self.critic_optim.step()
+                for start in range(0, self.args.batch_size, self.args.minibatch_size):
+                    end = start + self.args.minibatch_size
+                    minibatch_idxs = batch_idxs[start:end]
 
-if __name__ == "__main__":
-    args = parse_args()
-    import gym
-    import time
-    from stable_baselines3.common.atari_wrappers import (
-        ClipRewardEnv,
-        EpisodicLifeEnv,
-        FireResetEnv,
-        MaxAndSkipEnv,
-        NoopResetEnv,
-    )
-    # Frame Modifications
-    env = gym.make(args.gym_id)
-    env = gym.wrappers.RecordEpisodeStatistics(env) # automatically keeps track of rewards and other data
-    #env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
-    env = NoopResetEnv(env, noop_max=30)
-    env = MaxAndSkipEnv(env, skip=4) 
-    env = EpisodicLifeEnv(env)
-    if "FIRE" in env.unwrapped.get_action_meanings():
-        env = FireResetEnv(env)
-    env = ClipRewardEnv(env)
-    env = gym.wrappers.ResizeObservation(env, (84, 84))
-    env = gym.wrappers.GrayScaleObservation(env)
-    env = gym.wrappers.FrameStack(env, 4)
+                    _, minibatch_log_prob, minibatch_entropy, minibatch_values = self.get_action_and_value(obs[minibatch_idxs], actions.int()[minibatch_idxs])
+                
+                    minibatch_adv = advantages[minibatch_idxs]
+                    # advantage = (advantage - advantage.mean()) / (advantage.std() + 1e-10)
+    
+                    #import ipdb; ipdb.set_trace()
 
-    # Our learning
-    agent = Agent(env, args).to(args.device)
-    optim = optim.Adam(agent.parameters(), lr=agent.args.lr, eps=1e-5)
-    agent.learn(optim)
-    print("Finished training")
-    model_name = "ppo_self_1"
-    torch.save(agent.actor.state_dict(), model_name)
-    print(f"Saved model: {model_name}")
+                    ratio = torch.exp(minibatch_log_prob - logprobs[minibatch_idxs])
+                    actor_loss = (-torch.min(ratio * minibatch_adv, torch.clamp(ratio, 1 - self.args.clip * self.args.alpha, 1 + self.args.clip * self.args.alpha) * minibatch_adv)).mean()
+                    critic_loss = nn.MSELoss()(minibatch_values.view(-1), returns[minibatch_idxs])
+
+                    entropy_loss = minibatch_entropy.mean()
+                    #loss = actor_loss - critic_loss * self.args.vf + self.args.ent * entropy_loss
+                    loss = actor_loss + critic_loss * self.args.vf - self.args.ent * entropy_loss # signs are flipped because adam minimizes so we do the opposite
+                    optim.zero_grad()
+                    loss.backward()
+                    optim.step()
