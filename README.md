@@ -21,10 +21,14 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 *v0.3*
 - ~~Create the Network~~ (1/17)
     - ~~Implement PPO training~~ (1/17)
-    - Implement GAE
+    - ~~Implement GAE~~ (1/19)
+    - ~~Add update epochs~~ (1/19)
+    - ~~Add minibatches~~ (1/19)
+    - ~~Add entropy~~ (1/19)
 - ~~Define hyperparameters~~ (1/17)
 - Finish main file
-    - Implement frame modifications
+    - ~~Implement frame modifications~~ (1/19)
+    - ~~Add Evaluation~~ (1/19)
 
 *v0.2*
 - ~~Create the Model~~ (1/8)
@@ -51,6 +55,9 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 - ~~Somehow save the model for future use (i know there is someway to do this idr how)~~ **(01/08)**
 
 ## Diary(?) or Comments I guess
+*01/19/2022*\
+Followingi Costa Huang's tutorial really really helped me. At first, I had no clue what he was doing, but after reading the PPO paper thorouhgly, I found that I really need to read the journal. Like, it was right there. I've added most features, and it's somewhat learning, but I definitely need to fix some features as during evaluation, the bot looks bad, and also some printing methods aren't working properly yet. 
+
 *01/17/2022*\
 Ok yea I need to change this into a blog through GitHub pages or maybe Medium. Anyway, yea so I understand PPO decently well, and so I implemented it. Not exactly sure if it tests well on complicated environments but we'll see. Soon I need to learn how to do GAE and include entropy into our gradient.
 
@@ -122,7 +129,10 @@ honestly just read this: https://stackoverflow.com/questions/50999977/what-does-
 \
 \
 *Hadamard Product*
-- When using * to find the product of 2+ tensors, it outputs the hadamard product, aka inplace element multiplication. Thus, the tensors must have the same exact dimensions.
+- When using * to find the product of 2+ tensors, it outputs the hadamard product, aka inplace element multiplication. Thus, the tensors must have the same exact dimensions.\
+
+*torch.view(-1)*
+- Just view everything but the first dimension. Makes thing faster so I don't have to squeeze, I can just do this instead.
 
 ## Sources
 Just general info:
