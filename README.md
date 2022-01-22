@@ -29,6 +29,7 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 - Finish main file
     - ~~Implement frame modifications~~ (1/19)
     - ~~Add Evaluation~~ (1/19)
+    - Learn how to save and rerun
 
 *v0.2*
 - ~~Create the Model~~ (1/8)
@@ -55,8 +56,13 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 - ~~Somehow save the model for future use (i know there is someway to do this idr how)~~ **(01/08)**
 
 ## Diary(?) or Comments I guess
+*01/21/2022*\
+Yay I managed to complete PPO. Evaluating it, it has good results. Only problem is that I need to figure out how to rerun it after saving it because for some reason I can't rerun it to render it. Following is the graph of the results following 2 million timesteps. We can see that it's continuously going up, so I don't want to perform any longer training as it takes way too long.
+
+![ppo14](https://user-images.githubusercontent.com/55261758/150622921-73a121b3-f002-4b17-82bd-c6bbf8feca4e.png)
+
 *01/19/2022*\
-Followingi Costa Huang's tutorial really really helped me. At first, I had no clue what he was doing, but after reading the PPO paper thorouhgly, I found that I really need to read the journal. Like, it was right there. I've added most features, and it's somewhat learning, but I definitely need to fix some features as during evaluation, the bot looks bad, and also some printing methods aren't working properly yet. 
+Following Costa Huang's tutorial really really helped me. At first, I had no clue what he was doing, but after reading the PPO paper thorouhgly, I found that I really need to read the journal. Like, it was right there. I've added most features, and it's somewhat learning, but I definitely need to fix some features as during evaluation, the bot looks bad, and also some printing methods aren't working properly yet. 
 
 *01/17/2022*\
 Ok yea I need to change this into a blog through GitHub pages or maybe Medium. Anyway, yea so I understand PPO decently well, and so I implemented it. Not exactly sure if it tests well on complicated environments but we'll see. Soon I need to learn how to do GAE and include entropy into our gradient.
