@@ -36,8 +36,8 @@ class Agent(nn.Module):
         self.args = args
         self.writer = writer
 
-        self.actor = layer_init(nn.Linear(512, envs.single_action_space.n))
-        self.critic = layer_init(nn.Linear(512, 1))
+        self.actor = layer_init(nn.Linear(512, envs.single_action_space.n), std=0.01)
+        self.critic = layer_init(nn.Linear(512, 1), std=1)
 
     # def get_value(self, x):
     #     return self.critic(self.network(x / 255.0))
@@ -59,8 +59,6 @@ class Agent(nn.Module):
         dones = torch.zeros(self.args.num_steps, self.args.num_envs).to(self.args.device)
         values = torch.zeros(self.args.num_steps, self.args.num_envs).to(self.args.device)
 
-        #import ipdb; ipdb.set_trace()
-
         next_obs = torch.Tensor(self.envs.reset()).to(self.args.device)
         next_done = torch.zeros(self.args.num_envs).to(self.args.device)
         for step in range(0, self.args.num_steps):
@@ -70,46 +68,25 @@ class Agent(nn.Module):
             dones[step] = next_done
 
             with torch.no_grad():
-                #action, logprob, _, value = self.get_action_and_value(next_obs.unsqueeze(0))
-                action, logprob, _, value = self.get_action_and_value(next_obs)
+                action, logprob, entropy, value = self.get_action_and_value(next_obs)
             values[step] = value.flatten()
             actions[step] = action
             logprobs[step] = logprob
             next_obs, reward, done, info = self.envs.step(action.cpu().numpy())
             next_obs, next_done = torch.Tensor(next_obs).to(self.args.device), torch.Tensor(done).to(self.args.device)
-            rewards[step] = torch.tensor(reward).to(self.args.device).view(-1) #idk what the view is here for
-
-            #print("hi")
-
+            rewards[step] = torch.tensor(reward).to(self.args.device).view(-1)
+            global_step = self.args.global_step
             for item in info:
-                if item["ale.lives"] == 0:
+                if "episode" in item.keys():
+                    print(f"global_step={global_step}, episodic_return={item['episode']['r']}")
+                    wandb.log({"Episodic Return": item["episode"]["r"]}, step=self.args.global_step )
                     break
 
-            # for item in info:
-            #     print(item.keys())
-            #     if "episode" in item.keys():
-            #         print(f"global_step={self.args.global_step}, episodic_return={item['episode']['r']}")
-            #         # writer.add_scalar("charts/episodic_return", item["episode"]["r"], global_step)
-            #         # writer.add_scalar("charts/episodic_length", item["episode"]["l"], global_step)
-            #         break
-        #print(rewards)
         return obs, actions, logprobs, rewards, dones, values
-
-    # def compute_returns(self, rewards):
-    #     with torch.no_grad():
-    #         returns = torch.zeros_like(rewards).to(self.args.device)
-    #         discounted_reward = 0
-    #         idx = 0
-    #         for reward in reversed(rewards):
-    #             discounted_reward = reward + discounted_reward * self.args.gamma
-    #             returns[idx] = discounted_reward
-    #             idx += 1
-    #     return returns
 
     def calculate_advantage(self, rewards, values):
         advantages = torch.zeros_like(rewards).to(self.args.device)
         lastgaelam = 0
-        #import ipdb; ipdb.set_trace()
         for step in reversed(range(self.args.num_steps-1)):
             delta = rewards[step] + self.args.gamma * values[step+1] - values[step]
             advantages[step] = lastgaelam = delta + self.args.gamma * self.args.gae_lambda * lastgaelam
@@ -117,15 +94,12 @@ class Agent(nn.Module):
         return advantages, returns
 
     def learn(self, optim):
-        total_rewards = []
         while self.args.global_step <= self.args.total_timesteps:
             # add some anneal rate
             self.args.alpha = 1.0 - self.args.global_step * (1.0 / self.args.total_timesteps)
             optim.param_groups[0]["lr"] = self.args.lr * self.args.alpha
 
-            obs, actions, logprobs, rewards, _, values = self.rollout()
-            total_rewards.append(rewards.sum().detach())
-            wandb.log({'Average Reward': np.mean(total_rewards) / 8.0}, step=self.args.global_step)
+            obs, actions, logprobs, rewards, dones, values = self.rollout()
 
             advantages, returns = self.calculate_advantage(rewards, values)
 
@@ -138,22 +112,21 @@ class Agent(nn.Module):
             returns = returns.reshape(-1)
             values = values.reshape(-1)
 
-            for _ in range(self.args.update_epochs):
+            for epoch in range(self.args.update_epochs):
                 np.random.shuffle(batch_idxs)
 
                 for start in range(0, self.args.batch_size, self.args.minibatch_size):
                     end = start + self.args.minibatch_size
                     minibatch_idxs = batch_idxs[start:end]
 
-                    _, minibatch_log_prob, minibatch_entropy, minibatch_values = self.get_action_and_value(obs[minibatch_idxs], actions.int()[minibatch_idxs])
+                    throw, minibatch_log_prob, minibatch_entropy, minibatch_values = self.get_action_and_value(obs[minibatch_idxs], actions.int()[minibatch_idxs])
                 
                     minibatch_adv = advantages[minibatch_idxs]
-                    # advantage = (advantage - advantage.mean()) / (advantage.std() + 1e-10)
-    
-                    #import ipdb; ipdb.set_trace()
+                    
+                    minibatch_adv = (minibatch_adv - minibatch_adv.mean()) / (minibatch_adv.std() + 1e-10)
 
                     ratio = torch.exp(minibatch_log_prob - logprobs[minibatch_idxs])
-                    actor_loss = (-torch.min(ratio * minibatch_adv, torch.clamp(ratio, 1 - self.args.clip * self.args.alpha, 1 + self.args.clip * self.args.alpha) * minibatch_adv)).mean()
+                    actor_loss = (torch.max(ratio * -minibatch_adv, torch.clamp(ratio, 1 - self.args.clip * self.args.alpha, 1 + self.args.clip * self.args.alpha) * -minibatch_adv)).mean()
                     critic_loss = nn.MSELoss()(minibatch_values.view(-1), returns[minibatch_idxs])
 
                     entropy_loss = minibatch_entropy.mean()
