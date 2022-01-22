@@ -15,14 +15,15 @@ from arguments import parse_args
 
 from torch.utils.tensorboard import SummaryWriter
 import time
+import random
 import numpy as np
 
 args = parse_args()
 
-def make_env(gym_id, idx, run_name):
+def make_env(gym_id, seed, idx, run_name):
     def thunk():
         env = gym.make(gym_id)
-        # env = gym.wrappers.RecordEpisodeStatistics(env) # automatically keeps track of rewards and other data
+        env = gym.wrappers.RecordEpisodeStatistics(env) # automatically keeps track of rewards and other data
         # if idx == 0:
         #    env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
         env = NoopResetEnv(env, noop_max=30)
@@ -34,14 +35,22 @@ def make_env(gym_id, idx, run_name):
         env = gym.wrappers.ResizeObservation(env, (84, 84))
         env = gym.wrappers.GrayScaleObservation(env)
         env = gym.wrappers.FrameStack(env, 4)
+        env.seed(seed)
+        env.action_space.seed(seed)
+        env.observation_space.seed(seed)
         return env
     return thunk
 
 def main():
     run_name = f"{args.exp_name}"
 
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    torch.backends.cudnn.deterministic = True
+
     envs = gym.vector.SyncVectorEnv(
-        [make_env(args.gym_id, i, run_name) for i in range(args.num_envs)]
+        [make_env(args.gym_id, args.seed + i, i, run_name) for i in range(args.num_envs)]
     )
 
     # this is for tensorboard, essentially list literally all the args
@@ -53,7 +62,7 @@ def main():
 
     agent = Agent(envs, args, writer).to(args.device)
     optimizer = optim.Adam(agent.parameters(), lr=agent.args.lr, eps=1e-5)
-    model_name = "ppo_1"
+    model_name = args.exp_name
 
     # Learning
     if args.track:
@@ -72,27 +81,31 @@ def main():
         try:
             agent.learn(optimizer)
             print("Finished training")
-            torch.save(agent.actor.state_dict(), model_name)
+            torch.save(agent.state_dict(), f"models/{model_name}")
             print(f"Saved model: {model_name}")
         except KeyboardInterrupt:
-            print("hi")
             print(f"Interrupted training at step: {agent.args.global_step}")
-            torch.save(agent.actor.state_dict(), model_name)
+            torch.save(agent.state_dict(), f"models/{model_name}")
             print(f"Saved model: {model_name}")
             envs.close()
 
     # Evaluation; see it render one environment
     elif args.eval:
         obs = envs.reset()
+        agent.load_state_dict(torch.load(f"models/{model_name}"))
         while True:
             envs.envs[0].render()
-            time.sleep(0.05)
+            time.sleep(1/60)
             obs = torch.Tensor(obs).to(args.device)
-            action, _, _, _ = agent.get_action_and_value(obs)
+            with torch.no_grad():
+                action, _, _, _ = agent.get_action_and_value(obs)
 
             obs, _, _, info = envs.step(action.cpu().numpy())
-            if info[0]["ale.lives"] == 0:
-                obs = envs.reset()
+
+            for item in info:
+                if "episode" in item.keys():
+                    print(f"episodic_return={item['episode']['r']}")
+                    break
 
     envs.close()
 
