@@ -29,7 +29,7 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 - Finish main file
     - ~~Implement frame modifications~~ (1/19)
     - ~~Add Evaluation~~ (1/19)
-    - Learn how to save and rerun
+    - ~~Learn how to save and rerun~~ (1/21)
 
 *v0.2*
 - ~~Create the Model~~ (1/8)
@@ -56,6 +56,9 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 - ~~Somehow save the model for future use (i know there is someway to do this idr how)~~ **(01/08)**
 
 ## Diary(?) or Comments I guess
+*01/22/2022*\
+Ok so since I found a way to save the model (all I had to do was torch.save the agent state dict) and a way to save the video, I decided to switch back to my main objective, which was to have PPO play mario instead of breakout. During my first run, I had the # of steps to run per rollout as 128 following the PPO paper but I soon realized that this was too small as each episode of mario takes longer than 128 and the score plateued around 950 for a good while. So, I up'd it to 2000 which works great, but in the future I might want to do around 1000 instead as OpenAI deliberately chose a # of steps less than an episode size so I might do the same to make training faster. 2 million timesteps took around 3-4 hrs so doing 10 million timesteps or whenever the score plateues will take awhile. Also I might want to test out various learning rates.
+
 *01/21/2022*\
 Yay I managed to complete PPO. Evaluating it, it has good results. Only problem is that I need to figure out how to rerun it after saving it because for some reason I can't rerun it to render it. Following is the graph of the results following 2 million timesteps. We can see that it's continuously going up, so I don't want to perform any longer training as it takes way too long.
 
@@ -89,7 +92,7 @@ First:
 ```shell
 git clone https://github.com/ei5uke/mario_pytorch.git
 cd mario_pytorch
-cd v0.1 # v0.1 works albeit being very inefficient.
+cd v0.3
 ```
 
 You don't have to follow these next commands it's a modification for my computer, explanation to why is in those repositories. You still want to download PyTorch but follow that on the PyTorch installation page depending on if you want to use a GPU or don't have one. If you don't have the same issues as me, then make sure to download nes-py, gym-super-mario-bros, and pyglet normally through pip.
@@ -102,7 +105,7 @@ pip install torch torchvision torchaudio
 
 After you get those installations, run this:
 ```shell
-python3 main.py
+python3 main.py --track
 ```
 It will probably take like a good time for the code to run and get an average reward that is good.
 
@@ -110,6 +113,10 @@ It will probably take like a good time for the code to run and get an average re
 When running, some errors such as this might pop up but don't worry about them.
 ```shell
 warn(f"Failed to load image Python extension: {e}")
+```
+If you then want to visualize your results with render:
+``` shell
+python3 main.py --eval
 ```
 
 ## Notes on PyTorch things that took me an extra second to understand
