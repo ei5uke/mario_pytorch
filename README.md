@@ -1,5 +1,6 @@
 # mario_pytorch
-My Journey (or I guess Diary) in learning RL through Mario and PyTorch
+My Journey (or I guess Diary) in learning RL through Mario and PyTorch\
+https://medium.com/@eisukeh/mario-please-jump-an-informal-blog-detailing-my-journey-and-struggles-with-deep-reinforcement-a045cbd51a17
 
 ## About
 *v0.3*, 01/17/2022 - current\
