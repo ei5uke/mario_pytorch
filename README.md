@@ -3,7 +3,7 @@ My Journey (or I guess Diary) in learning RL through Mario and PyTorch
 
 ## About
 *v0.3*, 01/17/2022 - current\
-Now I guess I'll be working on PPO. I'll be following both Eric Yang Yu's tutorial and Costa Huang's tutorial, but since they are noticeably different I'll be tinkering around with stuff. Also, I'll be trying to learn how entropy works and implementing advantage estimations like GAE
+Now I guess I'll be working on PPO. I'll be following both Eric Yang Yu's tutorial and Costa Huang's tutorial, but since they are noticeably different I'll be tinkering around with stuff. Also, I'll be trying to learn how entropy works and implementing advantage estimations like GAE. COMPLETED YAY
 
 *v0.2*, 01/08/2022 - 01/16/2022\
 Following implementation of Youtuber "Jack of Some"'s implementation of RL through his 'DQN in PyTorch Stream _ of N' series, Deep RL Hands-on book by Maxim Lapan, and following the DQN paper. It's kinda repetitive, redoing the project again but while the first time I was easily able to understand the replay buffer, I didn't really understand anything else. So far, I'm more clear on the DQN algorithm itself, how PyTorch CNN's work, etc. 
@@ -56,6 +56,15 @@ I'm currently on my MacBook Air with the M1 processor, so there are code adjustm
 - ~~Somehow save the model for future use (i know there is someway to do this idr how)~~ **(01/08)**
 
 ## Diary(?) or Comments I guess
+*01/23/2022*\
+Finally, my PPO journey comes to an end. I've tuned hyperparameters and ran for 1.3 million timesteps, to which my mario runs pretty well. Ideally I'd run it for longer but it'd take too long so I'm not doing that today... maybe when I get access to a gpu. Anyway, here's my graph showcasing the current agents results and a gif of one of its runs:
+
+![mario-ppo10](https://user-images.githubusercontent.com/55261758/150721131-1030f8bd-262e-4025-87f7-e0e0b0153635.png)
+
+![mario-ppo10](https://user-images.githubusercontent.com/55261758/150721087-7f06201c-c843-40d6-9971-698e0ffd0db5.gif)
+
+While my PPO journey ends here. I'll look at other papers and think of other algorithms to implement. While I find PPO really understandable, I know there are many others to try out (I'm looking at you Rainbow).
+
 *01/22/2022*\
 Ok so since I found a way to save the model (all I had to do was torch.save the agent state dict) and a way to save the video, I decided to switch back to my main objective, which was to have PPO play mario instead of breakout. During my first run, I had the # of steps to run per rollout as 128 following the PPO paper but I soon realized that this was too small as each episode of mario takes longer than 128 and the score plateued around 950 for a good while. So, I up'd it to 2000 which works great, but in the future I might want to do around 1000 instead as OpenAI deliberately chose a # of steps less than an episode size so I might do the same to make training faster. 2 million timesteps took around 3-4 hrs so doing 10 million timesteps or whenever the score plateues will take awhile. Also I might want to test out various learning rates.
 
@@ -159,9 +168,11 @@ Just general info:
 - OpenAI Spinning Up PPO: https://spinningup.openai.com/en/latest/algorithms/ppo.html
 - Explanation of zerograd: https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
 - Epoch vs Episode: https://stats.stackexchange.com/questions/250943/what-is-the-difference-between-episode-and-epoch-in-deep-q-learning
+- gym record video source: https://github.com/openai/gym/blob/master/gym/wrappers/monitoring/video_recorder.py
 
 Tutorials that I followed:
 - Costa Huang's PPO: https://youtu.be/MEt6rrxH8W4
+- uvipen's mario PPO: https://github.com/uvipen/Super-mario-bros-PPO-pytorch
 - Eric Yang Yu's PPO tutorial: https://medium.com/@eyyu
 - Jack of Some's tutorial: https://www.youtube.com/watch?v=WVBp4Cj2lXo&list=PLd_Oyt6lAQ8Q0MaTG41iwPdy9GQmoz8dG
 - brthor's tutorial: https://www.youtube.com/watch?v=NP8pXZdU-5U&t=1842s
