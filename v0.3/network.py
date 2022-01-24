@@ -38,9 +38,6 @@ class Agent(nn.Module):
 
         self.actor = layer_init(nn.Linear(512, envs.single_action_space.n), std=0.01)
         self.critic = layer_init(nn.Linear(512, 1), std=1)
-
-    # def get_value(self, x):
-    #     return self.critic(self.network(x / 255.0))
     
     def get_action_and_value(self, x, action=None):
         hidden = self.network(x / 255.0)
@@ -61,6 +58,7 @@ class Agent(nn.Module):
 
         next_obs = torch.Tensor(self.envs.reset()).to(self.args.device)
         next_done = torch.zeros(self.args.num_envs).to(self.args.device)
+        change = np.array([False] * self.args.num_envs)
         for step in range(0, self.args.num_steps):
             self.args.global_step += 1 * self.args.num_envs
 
@@ -76,11 +74,18 @@ class Agent(nn.Module):
             next_obs, next_done = torch.Tensor(next_obs).to(self.args.device), torch.Tensor(done).to(self.args.device)
             rewards[step] = torch.tensor(reward).to(self.args.device).view(-1)
             global_step = self.args.global_step
-            for item in info:
-                if "episode" in item.keys():
-                    print(f"global_step={global_step}, episodic_return={item['episode']['r']}")
-                    wandb.log({"Episodic Return": item["episode"]["r"]}, step=self.args.global_step )
-                    break
+
+            # breakout; get episodic return
+            # for item in info:
+            #     if "episode" in item.keys():
+            #         # breakout
+            #         # print(f"global_step={global_step}, episodic_return={item['episode']['r']}")
+            #         # wandb.log({"Episodic Return": item["episode"]["r"]}, step=self.args.global_step )
+            #         # break
+
+        # mario; get trajectory rewards
+        print(f"global_step={self.args.global_step}, score={rewards[:,0].sum()}")
+        wandb.log({"Rewards": rewards[:,0].sum()}, step=self.args.global_step )
 
         return obs, actions, logprobs, rewards, dones, values
 
@@ -127,11 +132,12 @@ class Agent(nn.Module):
 
                     ratio = torch.exp(minibatch_log_prob - logprobs[minibatch_idxs])
                     actor_loss = (torch.max(ratio * -minibatch_adv, torch.clamp(ratio, 1 - self.args.clip * self.args.alpha, 1 + self.args.clip * self.args.alpha) * -minibatch_adv)).mean()
-                    critic_loss = nn.MSELoss()(minibatch_values.view(-1), returns[minibatch_idxs])
+                    #critic_loss = nn.MSELoss()(minibatch_values.view(-1), returns[minibatch_idxs])
+                    critic_loss = nn.SmoothL1Loss()(minibatch_values.view(-1), returns[minibatch_idxs]) # change from MSE to Smoothl1 is generally nice
 
                     entropy_loss = minibatch_entropy.mean()
-                    #loss = actor_loss - critic_loss * self.args.vf + self.args.ent * entropy_loss
                     loss = actor_loss + critic_loss * self.args.vf - self.args.ent * entropy_loss # signs are flipped because adam minimizes so we do the opposite
                     optim.zero_grad()
                     loss.backward()
+                    torch.nn.utils.clip_grad_norm_(self.parameters(), 0.5) # oh yea this thing what does this do
                     optim.step()
